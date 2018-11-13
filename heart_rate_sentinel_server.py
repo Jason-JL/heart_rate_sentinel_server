@@ -1,14 +1,18 @@
 """
     REQUIREMENT:
 
-    remember to validate user inputs that come from (request.get_json())
+    ? remember to validate user inputs that come from (request.get_json())
     to ensure the right fields exist in the data and that they are
     the right type
 
-    You can write independent, testable validate_heart_rate_request(r)
-    functions. You do not have to test the flask handler functions directly
-    (the functions associated with the @app.route decorator), but all other
-    functions should be tested.
+    ? You can write independent, testable validate_heart_rate_request(r)
+    functions.
+
+    ? how to test the functions( require a return value? )
+
+    ? the meaning of last post function
+
+    ? should we store the status? what value type should be use?
 """
 
 from flask import Flask, jsonify, request
@@ -95,10 +99,10 @@ def get_status(patient_id):
     :param patient_id:
     :return:
     """
-    # todo: is_tachycardic(patient_id) return True/False
     p = Patient.objects.raw({"_id": patient_id}).first()
     age = p.user_age
     heart_rate_avg = get_heart_rate_average(patient_id)
+    # todo: is_tachycardic()
     status = is_tachycardic(age, heart_rate_avg['heart_rate_average'])
     data = {
         "status": status,
