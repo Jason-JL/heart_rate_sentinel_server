@@ -50,10 +50,10 @@ def validate_json_data_entry(request_json, entry_dict):
     :param entry_dict: dictionary has the format {entry:example_data}
     :return:
     """
-    for entry_name, data in entry_dict:
+    for entry_name, data in entry_dict.items():
         if entry_name not in request_json:
             raise ValueError("No entry in the request json data")
-        if isinstance(entry_dict[entry_name], type(data)):
+        if isinstance(type(entry_dict[entry_name]), type(data)):
             raise TypeError("Data Type is not as expected")
     return True
 
@@ -65,4 +65,4 @@ def average_heart_rate(heart_rate_list):
     :param heart_rate_list: list contains the measured heart rates
     :return: the average
     """
-    return np.sum(heart_rate_list) / len(heart_rate_list)
+    return int(np.sum(heart_rate_list) / len(heart_rate_list))
