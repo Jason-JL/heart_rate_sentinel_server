@@ -20,6 +20,7 @@ from pymodm import connect
 from pymodm import MongoModel, fields
 from datetime import datetime
 import toolbox_jason as jtb
+from sendEmail import send_notification_email
 
 
 connect("mongodb://void001:goduke18@ds159993.mlab.com:59993/bme590")
@@ -98,8 +99,10 @@ def post_heart_rate():
         p = Patient.objects.raw({"_id": r['patient_id']}).first()
         if "Tachycardia" is jtb.validate_heart_rate_request(p.user_age,
                                                             r['heart_rate']):
-            # Todo: notify the user by email
-            print("Todo: notify the user by email")
+            date_string = p.last_timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')
+            send_notification_email(p.attending_email,
+                                    p.last_heart_rate,
+                                    date_string)
 
         p.last_heart_rate = r['heart_rate']
         p.heart_rates.append(p.last_heart_rate)
