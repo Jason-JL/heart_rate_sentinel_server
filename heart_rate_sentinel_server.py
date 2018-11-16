@@ -4,12 +4,28 @@
 
 from flask import Flask, jsonify, request
 from datetime import datetime
-from database_mongodb import Patient, connect_to_mongodb
+# from database_mongodb import Patient, connect_to_mongodb
+from pymodm import connect, MongoModel, fields
 import toolbox_jason as jtb
 from sendEmail import send_notification_email
 
-
+url = "mongodb://void001:goduke18@ds159993.mlab.com:59993/bme590"
+connect(url)
 app = Flask(__name__)
+
+
+class Patient(MongoModel):
+    """
+    Data Class used by MongoDB
+    """
+
+    patient_id = fields.BigIntegerField(primary_key=True)
+    attending_email = fields.EmailField()
+    user_age = fields.IntegerField()
+    last_heart_rate = fields.IntegerField()
+    last_timestamp = fields.DateTimeField()
+    heart_rates = fields.ListField()
+    timestamps = fields.ListField()
 
 
 @app.route("/api/new_patient", methods=["POST"])
@@ -175,5 +191,4 @@ def post_heart_rate_interval_average():
 
 
 if __name__ == '__main__':
-    connect_to_mongodb()
     app.run()
