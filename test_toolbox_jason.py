@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# Author: Jason L
+
 import pytest
 from toolbox_jason import validate_json_data_entry, validate_heart_rate_request
 from toolbox_jason import average_heart_rate

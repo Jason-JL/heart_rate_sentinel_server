@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+# Author: Jason L
+
 import sendgrid
 import sys
 import os
@@ -6,9 +10,10 @@ from sendgrid.helpers.mail import *
 
 def send_notification_email(email_sent_to, heart_rate, date_string):
     """
+    use sendgrid API to send email
 
-    :param email_sent_to:
-    :param heart_rate:
+    :param email_sent_to: email address to send
+    :param heart_rate: the not
     :param date_string:
     :return:
     """
