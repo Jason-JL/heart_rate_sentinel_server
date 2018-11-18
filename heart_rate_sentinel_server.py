@@ -9,8 +9,8 @@ from pymodm import connect, MongoModel, fields
 import toolbox_jason as jtb
 from sendEmail import send_notification_email
 
-url = "mongodb://void001:goduke18@ds159993.mlab.com:59993/bme590"
-connect(url)
+
+connect("mongodb://void001:goduke18@ds159993.mlab.com:59993/bme590")
 app = Flask(__name__)
 
 
@@ -18,8 +18,7 @@ class Patient(MongoModel):
     """
     Data Class used by MongoDB
     """
-
-    patient_id = fields.BigIntegerField(primary_key=True)
+    patient_id = fields.IntegerField(primary_key=True)
     attending_email = fields.EmailField()
     user_age = fields.IntegerField()
     last_heart_rate = fields.IntegerField()
@@ -49,17 +48,17 @@ def post_new_patient():
     entry_to_check = {'patient_id': 1,
                       'attending_email': 'emailstr',
                       'user_age': 100}
+    print("---------- post_new_patient function: request data is {}".format(r))
     try:
         jtb.validate_json_data_entry(r, entry_to_check)
     except ValueError or TypeError as err:
         print(err)
-        return 400
     else:
         p = Patient(r['patient_id'],
-                    attendint_email=r['attending_email'],
+                    attending_email=r['attending_email'],
                     user_age=r['user_age'])
         p.save()
-        return 200
+        return str(200)
 
 
 @app.route("/api/heart_rate", methods=["POST"])
@@ -77,28 +76,32 @@ def post_heart_rate():
     :return: 400 if data entry is not valid, 200 if data is successfully saved
     """
     r = request.get_json()
+    print("get Json is {}".format(r))
     entry_to_check = {'patient_id': 1, 'heart_rate': 60}
     try:
         jtb.validate_json_data_entry(r, entry_to_check)
     except ValueError or TypeError as err:
         print(err)
-        return 400
     else:
-        p = Patient.objects.raw({"_id": r['patient_id']}).first()
-        if "Tachycardia" is jtb.validate_heart_rate_request(p.user_age,
+        p = Patient.objects.raw({"_id": int(r['patient_id'])}).first()
+        if p is not None:
+            if "Tachycardia" is jtb.validate_heart_rate_request(p.user_age,
                                                             r['heart_rate']):
-            date_string = p.last_timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')
-            send_notification_email(p.attending_email,
-                                    p.last_heart_rate,
-                                    date_string)
+                date_string = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                send_notification_email(p.attending_email,
+                                        p.last_heart_rate,
+                                        date_string)
 
-        p.last_heart_rate = r['heart_rate']
-        p.heart_rates.append(p.last_heart_rate)
-        p.last_timestamp = datetime.now()
-        p.timestamps.append(p.last_timestamp)
+            p.last_heart_rate = r['heart_rate']
+            p.heart_rates.append(p.last_heart_rate)
+            p.last_timestamp = datetime.now()
+            p.timestamps.append(p.last_timestamp)
 
-        p.save
-        return 200
+            p.save()
+            print(p.last_heart_rate)
+            return str(200)
+        else:
+            raise ValueError("Warning: cannot find the patient!")
 
 
 @app.route("/api/status/<patient_id>", methods=["GET"])
@@ -111,18 +114,21 @@ def get_status(patient_id):
     :param patient_id: request patient id
     :return: json data contains: "status" and "timestamp"
     """
-    p = Patient.objects.raw({"_id": patient_id}).first()
-    status = jtb.validate_heart_rate_request(p.user_age, p.last_heart_rate)
-    try:
-        timestamp_str = p.last_timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')
-    except TypeError as err:
-        raise err("the timestamp has not expected type")
+    p = Patient.objects.raw({"_id": int(patient_id)}).first()
+    if p is not None and p.last_heart_rate is not None:
+        status = jtb.validate_heart_rate_request(p.user_age, p.last_heart_rate)
+        try:
+            timestamp_str = p.last_timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')
+        except TypeError as err:
+            raise err("the timestamp has not expected type")
 
-    data = {
-        "status": status,
-        "timestamp": timestamp_str
-    }
-    return jsonify(data)
+        data = {
+            "status": status,
+            "timestamp": timestamp_str
+        }
+        return jsonify(data)
+    else:
+        raise ValueError("add the patient and measured heart rate first")
 
 
 @app.route("/api/heart_rate/<patient_id>", methods=["GET"])
@@ -133,7 +139,7 @@ def get_heart_rates(patient_id):
     :param patient_id:
     :return: json data contains "heart_rates"
     """
-    p = Patient.objects.raw({"_id": patient_id}).first()
+    p = Patient.objects.raw({"_id": int(patient_id)}).first()
     data = {
         "heart_rates": p.heart_rates
     }
@@ -149,12 +155,19 @@ def get_heart_rate_average(patient_id):
     :param patient_id: request patient_id
     :return: json data contains "heart_rate_average"
     """
-    p = Patient.objects.raw({"_id": patient_id}).first()
-    heart_rate_avg = jtb.average_heart_rate(p.heart_rates)
-    data = {
-        "heart_rate_average": heart_rate_avg
-    }
-    return jsonify(data)
+    print("patient_id is {}".format(patient_id))
+    p = Patient.objects.raw({"_id": int(patient_id)}).first()
+    print("p is {}".format(p))
+    if p is not None:
+        try:
+            heart_rate_avg = jtb.average_heart_rate(p.heart_rates)
+            data = {
+                "heart_rate_average": heart_rate_avg
+            }
+            return jsonify(data)
+        except ZeroDivisionError as err:
+            print(err)
+    return str(500)
 
 
 @app.route("/api/heart_rate/interval_average", methods=["POST"])
@@ -172,22 +185,26 @@ def post_heart_rate_interval_average():
         "heart_rate_interval_average" if data entry is valid
     """
     r = request.get_json()
+    print("get Json is {}".format(r))
     entry_to_check = {'patient_id': 1,
                       'heart_rate_average_since': "2018-03-09 11:00:36.372339"}
     try:
         jtb.validate_json_data_entry(r, entry_to_check)
     except ValueError or TypeError as err:
-        print(err)
-        return 400
+        print("Ooops, " + err)
     else:
         p = Patient.objects.raw({"_id": r['patient_id']}).first()
-        heart_rates = [p.heart_rates[x] for x, y in enumerate(p.timestamps)
-                       if y > datetime.strptime(r['heart_rate_average_since'],
-                                                '%Y-%m-%d %H:%M:%S.%f')]
-        data = {
-            'heart_rate_interval_average': jtb.average_heart_rate(heart_rates)
-        }
-        return jsonify(data)
+        try:
+            heart_rates = [p.heart_rates[x] for x, y in enumerate(p.timestamps)
+                           if y > datetime.strptime(r['heart_rate_average_since'],
+                                                    '%Y-%m-%d %H:%M:%S.%f')]
+            data = {
+                'heart_rate_interval_average': jtb.average_heart_rate(heart_rates)
+            }
+            return jsonify(data)
+        except ZeroDivisionError as err:
+            print(err)
+        return str(500)
 
 
 if __name__ == '__main__':
