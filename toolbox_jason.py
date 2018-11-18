@@ -69,4 +69,5 @@ def average_heart_rate(heart_rate_list):
     :param heart_rate_list: list contains the measured heart rates
     :return: the average
     """
-    return np.sum(heart_rate_list) / len(heart_rate_list)
+    assert(heart_rate_list is not None)
+    return int(np.sum(heart_rate_list) / len(heart_rate_list))
