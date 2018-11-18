@@ -1,2 +1,4 @@
 sendgrid.env
 .build
+__pycache__/
+.idea
